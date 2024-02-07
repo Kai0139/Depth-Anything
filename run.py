@@ -10,6 +10,7 @@ from tqdm import tqdm
 from depth_anything.dpt import DepthAnything
 from depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -31,7 +32,8 @@ if __name__ == '__main__':
     
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    depth_anything = DepthAnything.from_pretrained('LiheYoung/depth_anything_{}14'.format(args.encoder)).to(DEVICE).eval()
+    # depth_anything = DepthAnything.from_pretrained('LiheYoung/depth_anything_{}14'.format(args.encoder)).to(DEVICE).eval()
+    depth_anything = DepthAnything.from_pretrained('/home/zhangkai/repos/Depth-Anything/models/vits14').to(DEVICE).eval()
     
     total_params = sum(param.numel() for param in depth_anything.parameters())
     print('Total parameters: {:.2f}M'.format(total_params / 1e6))

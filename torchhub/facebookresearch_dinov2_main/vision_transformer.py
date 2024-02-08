@@ -40,6 +40,19 @@ class BlockChunk(nn.ModuleList):
             x = b(x)
         return x
 
+"""
+def vit_small(patch_size=16, num_register_tokens=0, **kwargs):
+    model = DinoVisionTransformer(
+        patch_size=patch_size,
+        embed_dim=384,
+        depth=12,
+        num_heads=6,
+        mlp_ratio=4,
+        block_fn=partial(Block, attn_class=MemEffAttention),
+        num_register_tokens=num_register_tokens,
+        **kwargs,
+    )
+"""
 
 class DinoVisionTransformer(nn.Module):
     def __init__(
@@ -272,6 +285,7 @@ class DinoVisionTransformer(nn.Module):
         x = self.prepare_tokens_with_masks(x)
         # If n is an int, take the n last blocks. If it's a list, take them
         output, total_block_len = [], len(self.blocks)
+        print("length of blocks: {}".format(len(self.blocks)))
         blocks_to_take = range(total_block_len - n, total_block_len) if isinstance(n, int) else n
         for i, blk in enumerate(self.blocks):
             x = blk(x)
@@ -306,6 +320,10 @@ class DinoVisionTransformer(nn.Module):
             outputs = self._get_intermediate_layers_chunked(x, n)
         else:
             outputs = self._get_intermediate_layers_not_chunked(x, n)
+            print("length of outputs: {}".format(len(outputs)))
+            # print("shape of outputs: {}".format(outputs[0].shape))
+            for i in range(len(outputs)):
+                print("shape of output {}: {}".format(i, outputs[i].shape))
         if norm:
             outputs = [self.norm(out) for out in outputs]
         class_tokens = [out[:, 0] for out in outputs]

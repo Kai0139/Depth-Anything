@@ -1,5 +1,5 @@
 #!/bin/sh
-IMG_DIR=/home/zhangkai/data/allweather/gt
-OUT_DIR=/home/zhangkai/data/allweather/depth_results/gt
+IMG_DIR=/home/zhangkai/data/mini_allweather/input
+OUT_DIR=/home/zhangkai/data/mini_allweather/feature_viz/input
 
-python3 run.py --encoder vits --img-path ${IMG_DIR} --outdir ${OUT_DIR}
+python3 visualize_features.py --encoder vits --img-path ${IMG_DIR} --outdir ${OUT_DIR}

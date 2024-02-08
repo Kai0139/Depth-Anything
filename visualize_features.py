@@ -7,10 +7,19 @@ import torch.nn.functional as F
 from torchvision.transforms import Compose
 from tqdm import tqdm
 
+from pathlib import Path
+
 from depth_anything.dpt import DepthAnything
 from depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+
+def normalize_255(arr : np.array):
+    min_x = np.min(arr)
+    max_x = np.max(arr)
+    result = 255 * (arr - min_x) / (max_x - min_x)
+    result = result.astype(np.uint8)
+    return result
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -64,52 +73,76 @@ if __name__ == '__main__':
         filenames.sort()
     
     os.makedirs(args.outdir, exist_ok=True)
+
+    print("dinov2 chunked blocks: {}".format(depth_anything.pretrained.chunked_blocks))
     
     for filename in tqdm(filenames):
+        print(filename)
+        fp = Path(filename)
+        image_name = str(fp).split("/")[-1]
+        image_name = str(Path(__file__).resolve().parent.joinpath("feature_images", image_name))
+
         raw_image = cv2.imread(filename)
         image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) / 255.0
         
         h, w = image.shape[:2]
-        
+        print("image h: {} w: {}".format(h, w))        
         image = transform({'image': image})['image']
         image = torch.from_numpy(image).unsqueeze(0).to(DEVICE)
+        print("input size: {}".format(image.shape))
         
         with torch.no_grad():
-            depth = depth_anything(image)
-        
-        depth = F.interpolate(depth[None], (h, w), mode='bilinear', align_corners=False)[0, 0]
-        depth = (depth - depth.min()) / (depth.max() - depth.min()) * 255.0
-        
-        depth = depth.cpu().numpy().astype(np.uint8)
-        
-        if args.grayscale:
-            depth = np.repeat(depth[..., np.newaxis], 3, axis=-1)
-        else:
-            depth = cv2.applyColorMap(depth, cv2.COLORMAP_INFERNO)
-        
-        filename = os.path.basename(filename)
-        
-        if args.pred_only:
-            cv2.imwrite(os.path.join(args.outdir, filename[:filename.rfind('.')] + '_depth.png'), depth)
-        else:
-            split_region = np.ones((raw_image.shape[0], margin_width, 3), dtype=np.uint8) * 255
-            combined_results = cv2.hconcat([raw_image, split_region, depth])
+            features = depth_anything(image, True)
+            last_feature_block = features[3][0] # 1x 2072 x 384
+            last_feature_block = torch.squeeze(last_feature_block, 0) # 2072 x 384
             
-            caption_space = np.ones((caption_height, combined_results.shape[1], 3), dtype=np.uint8) * 255
-            captions = ['Raw image', 'Depth Anything']
-            segment_width = w + margin_width
-            
-            for i, caption in enumerate(captions):
-                # Calculate text size
-                text_size = cv2.getTextSize(caption, font, font_scale, font_thickness)[0]
+            ch = last_feature_block.size()[1] # ch = 384
+            print("number of channels: {}".format(ch))
+            # visualize all 384 channels with 37 * 56
+            seq_h = 37
+            seq_w = 56
+            feature_channels = []
+            for i in range(ch):
+                feature_ch = last_feature_block[:,i]
+                feature_ch = feature_ch.reshape(seq_h, seq_w).cpu().numpy()
+                # cv2.resize(feature_ch, (seq_h*2, seq_w*2), cv2.INTER_NEAREST)
+                feature_channels.append(feature_ch)
+                 
+            viz_ncols = 24
+            viz_w = viz_ncols * seq_w
+            viz_nrows = int(np.ceil(len(feature_channels) / viz_ncols))
+            print("number of rows in viz image: {}".format(viz_nrows))
+            viz_rows = []
+            for i in range(viz_nrows-1):
+                head_idx = i * viz_ncols
+                tail_idx = np.min([i*viz_ncols + viz_ncols, len(feature_channels)])
+                # print("head idx of row: {}".format(head_idx))
+                # print("tail idx of row: {}".format(tail_idx))
+                viz_row = cv2.hconcat(feature_channels[head_idx: tail_idx])
+                viz_rows.append(viz_row)
 
-                # Calculate x-coordinate to center the text
-                text_x = int((segment_width * i) + (w - text_size[0]) / 2)
-
-                # Add text caption
-                cv2.putText(caption_space, caption, (text_x, 40), font, font_scale, (0, 0, 0), font_thickness)
+            print("single row shape: {}".format(viz_rows[0].shape))
+            viz = cv2.vconcat(viz_rows)
+            last_row = cv2.hconcat(feature_channels[(viz_nrows-1)*viz_ncols: len(feature_channels)])
+            if last_row.shape[1] < viz_w:
+                remainders = np.zeros([seq_h, viz_w - last_row.shape[1]], dtype=int)
+                last_row = cv2.hconcat([last_row, remainders])
+            viz = cv2.vconcat([viz, last_row])
+            print("final viz image shape: {}".format(viz.shape))
+            viz = normalize_255(viz)
+            viz = cv2.cvtColor(viz, cv2.COLOR_GRAY2RGB)
             
-            final_result = cv2.vconcat([caption_space, combined_results])
-            
-            cv2.imwrite(os.path.join(args.outdir, filename[:filename.rfind('.')] + '_img_depth.png'), final_result)
-        
+            # Put original image in the viz image
+            image_h = raw_image.shape[0]
+            image_w = raw_image.shape[1]
+            target_h = np.max([image_h + 2*margin_width, viz.shape[0] + 2*margin_width])
+            img_margin = int((target_h - image_h) / 2)
+            feature_margin = int((target_h - viz.shape[0]) / 2)
+            img_left = cv2.vconcat([np.ones([img_margin, image_w, 3], dtype=np.uint8), 
+                                    raw_image, 
+                                    np.ones([img_margin, image_w, 3], dtype=np.uint8)])
+            img_right = cv2.vconcat([np.ones([feature_margin, viz.shape[1], 3], dtype=np.uint8), 
+                                    viz, 
+                                    np.ones([feature_margin, viz.shape[1], 3], dtype=np.uint8)])
+            viz = cv2.hconcat([img_left, img_right])
+            cv2.imwrite(image_name, viz)

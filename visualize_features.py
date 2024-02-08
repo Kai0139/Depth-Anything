@@ -99,8 +99,8 @@ if __name__ == '__main__':
             ch = last_feature_block.size()[1] # ch = 384
             print("number of channels: {}".format(ch))
             # visualize all 384 channels with 37 * 56
-            seq_h = 37
-            seq_w = 56
+            seq_h = int(image.shape[2] / 14)
+            seq_w = int(image.shape[3] / 14)
             feature_channels = []
             for i in range(ch):
                 feature_ch = last_feature_block[:,i]
@@ -136,13 +136,27 @@ if __name__ == '__main__':
             image_h = raw_image.shape[0]
             image_w = raw_image.shape[1]
             target_h = np.max([image_h + 2*margin_width, viz.shape[0] + 2*margin_width])
-            img_margin = int((target_h - image_h) / 2)
-            feature_margin = int((target_h - viz.shape[0]) / 2)
-            img_left = cv2.vconcat([np.ones([img_margin, image_w, 3], dtype=np.uint8), 
+            feature_h = viz.shape[0]
+            
+            if (target_h - image_h) % 2 != 0:
+                img_margin_top = int((target_h - image_h) / 2)
+                img_margin_bot = int((target_h - image_h) / 2) + 1
+            else:
+                img_margin_top = int((target_h - image_h) / 2)
+                img_margin_bot = int((target_h - image_h) / 2)
+
+            if (target_h - feature_h) % 2 != 0:
+                feature_margin_top = int((target_h - feature_h) / 2)
+                feature_margin_bot = int((target_h - feature_h) / 2) + 1
+            else:
+                feature_margin_top = int((target_h - feature_h) / 2)
+                feature_margin_bot = int((target_h - feature_h) / 2)
+
+            img_left = cv2.vconcat([np.ones([img_margin_top, image_w, 3], dtype=np.uint8), 
                                     raw_image, 
-                                    np.ones([img_margin, image_w, 3], dtype=np.uint8)])
-            img_right = cv2.vconcat([np.ones([feature_margin, viz.shape[1], 3], dtype=np.uint8), 
+                                    np.ones([img_margin_bot, image_w, 3], dtype=np.uint8)])
+            img_right = cv2.vconcat([np.ones([feature_margin_top, viz.shape[1], 3], dtype=np.uint8), 
                                     viz, 
-                                    np.ones([feature_margin, viz.shape[1], 3], dtype=np.uint8)])
+                                    np.ones([feature_margin_bot, viz.shape[1], 3], dtype=np.uint8)])
             viz = cv2.hconcat([img_left, img_right])
             cv2.imwrite(image_name, viz)

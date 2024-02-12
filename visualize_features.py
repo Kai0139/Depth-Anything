@@ -79,8 +79,8 @@ if __name__ == '__main__':
     for filename in tqdm(filenames):
         print(filename)
         fp = Path(filename)
-        image_name = str(fp).split("/")[-1]
-        image_name = str(Path(__file__).resolve().parent.joinpath("feature_images", image_name))
+        image_fn = str(fp).split("/")[-1]
+        feature_image_path = str(Path(__file__).resolve().parent.joinpath("feature_images", image_fn))
 
         raw_image = cv2.imread(filename)
         image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) / 255.0
@@ -159,4 +159,4 @@ if __name__ == '__main__':
                                     viz, 
                                     np.ones([feature_margin_bot, viz.shape[1], 3], dtype=np.uint8)])
             viz = cv2.hconcat([img_left, img_right])
-            cv2.imwrite(image_name, viz)
+            cv2.imwrite(feature_image_path, viz)

@@ -12,7 +12,7 @@ from pathlib import Path
 from depth_anything.dpt import DepthAnything
 from depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '6'
 
 def normalize_255(arr : np.array):
     min_x = np.min(arr)
@@ -49,8 +49,8 @@ if __name__ == '__main__':
     
     transform = Compose([
         Resize(
-            width=518,
-            height=518,
+            width=1036,
+            height=1036,
             resize_target=False,
             keep_aspect_ratio=True,
             ensure_multiple_of=14,
@@ -96,40 +96,20 @@ if __name__ == '__main__':
             last_feature_block = features[3][0] # 1x 2072 x 384
             last_feature_block = torch.squeeze(last_feature_block, 0) # 2072 x 384
             
-            ch = last_feature_block.size()[1] # ch = 384
-            print("number of channels: {}".format(ch))
+            nch = last_feature_block.size()[1] # nch = 384
+            print("number of channels: {}".format(nch))
             # visualize all 384 channels with 37 * 56
             seq_h = int(image.shape[2] / 14)
             seq_w = int(image.shape[3] / 14)
-            feature_channels = []
-            for i in range(ch):
+            feature_channels = np.zeros([seq_h, seq_w], dtype=np.float32)
+            for i in range(nch):
                 feature_ch = last_feature_block[:,i]
                 feature_ch = feature_ch.reshape(seq_h, seq_w).cpu().numpy()
                 # cv2.resize(feature_ch, (seq_h*2, seq_w*2), cv2.INTER_NEAREST)
-                feature_channels.append(feature_ch)
-                 
-            viz_ncols = 24
-            viz_w = viz_ncols * seq_w
-            viz_nrows = int(np.ceil(len(feature_channels) / viz_ncols))
-            print("number of rows in viz image: {}".format(viz_nrows))
-            viz_rows = []
-            for i in range(viz_nrows-1):
-                head_idx = i * viz_ncols
-                tail_idx = np.min([i*viz_ncols + viz_ncols, len(feature_channels)])
-                # print("head idx of row: {}".format(head_idx))
-                # print("tail idx of row: {}".format(tail_idx))
-                viz_row = cv2.hconcat(feature_channels[head_idx: tail_idx])
-                viz_rows.append(viz_row)
+                feature_channels += feature_ch
 
-            print("single row shape: {}".format(viz_rows[0].shape))
-            viz = cv2.vconcat(viz_rows)
-            last_row = cv2.hconcat(feature_channels[(viz_nrows-1)*viz_ncols: len(feature_channels)])
-            if last_row.shape[1] < viz_w:
-                remainders = np.zeros([seq_h, viz_w - last_row.shape[1]], dtype=int)
-                last_row = cv2.hconcat([last_row, remainders])
-            viz = cv2.vconcat([viz, last_row])
-            print("final viz image shape: {}".format(viz.shape))
-            viz = normalize_255(viz)
+            feature_channels /= nch
+            viz = normalize_255(feature_channels)
             viz = cv2.cvtColor(viz, cv2.COLOR_GRAY2RGB)
             
             # Put original image in the viz image

@@ -6,8 +6,9 @@ import torch
 import torch.nn.functional as F
 from torchvision.transforms import Compose
 from tqdm import tqdm
-
+from PIL import Image
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 from depth_anything.dpt import DepthAnything
 from depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
@@ -51,11 +52,11 @@ if __name__ == '__main__':
     
     transform = Compose([
         Resize(
-            width=1036,
-            height=1036,
+            width=1036 * 3,
+            height=1036 * 3,
             resize_target=False,
             keep_aspect_ratio=True,
-            ensure_multiple_of=14,
+            # ensure_multiple_of=14,
             resize_method='lower_bound',
             image_interpolation_method=cv2.INTER_CUBIC,
         ),
@@ -82,9 +83,12 @@ if __name__ == '__main__':
         print(filename)
         fp = Path(filename)
         image_fn = str(fp).split("/")[-1]
-        feature_image_path = str(Path(__file__).resolve().parent.joinpath("feature_images", image_fn))
+        feature_image_path = str(Path(__file__).resolve().parent.joinpath("vis_depth_feature", image_fn))
 
         raw_image = cv2.imread(filename)
+        image_rgb = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB)
+        image_pil = Image.fromarray(image_rgb)
+
         image = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB) / 255.0
         
         h, w = image.shape[:2]
@@ -94,51 +98,28 @@ if __name__ == '__main__':
         print("input size: {}".format(image.shape))
         
         with torch.no_grad():
-            features = depth_anything(image, True)
+            depth, features = depth_anything(image)
             last_feature_block = features[3][0] # 1x 2072 x 384
-            last_feature_block = torch.squeeze(last_feature_block, 0) # 2072 x 384
+            last_feature_block = torch.mean(last_feature_block,dim=2).squeeze(0)
+            # last_feature_block = torch.squeeze(last_feature_block, 0) # 2072 x 384
             
-            nch = last_feature_block.size()[1] # nch = 384
-            print("number of channels: {}".format(nch))
+            # nch = last_feature_block.size()[1] # nch = 384
+            # print("number of channels: {}".format(nch))
             # visualize all 384 channels with 37 * 56
             seq_h = int(image.shape[2] / 14)
             seq_w = int(image.shape[3] / 14)
-            feature_channels = np.zeros([seq_h, seq_w], dtype=np.float32)
-            for i in range(nch):
-                feature_ch = last_feature_block[:,i]
-                feature_ch = feature_ch.reshape(seq_h, seq_w).cpu().numpy()
-                # cv2.resize(feature_ch, (seq_h*2, seq_w*2), cv2.INTER_NEAREST)
-                feature_channels += feature_ch
 
-            feature_channels /= nch
-            viz = normalize_255(feature_channels)
-            viz = cv2.cvtColor(viz, cv2.COLOR_GRAY2RGB)
+            last_feature_block = last_feature_block.reshape(seq_h,seq_w)
+
+            fig, axes = plt.subplots(1, 2, figsize=(12, 5))
             
-            # Put original image in the viz image
-            image_h = raw_image.shape[0]
-            image_w = raw_image.shape[1]
-            target_h = np.max([image_h + 2*margin_width, viz.shape[0] + 2*margin_width])
-            feature_h = viz.shape[0]
-            
-            if (target_h - image_h) % 2 != 0:
-                img_margin_top = int((target_h - image_h) / 2)
-                img_margin_bot = int((target_h - image_h) / 2) + 1
-            else:
-                img_margin_top = int((target_h - image_h) / 2)
-                img_margin_bot = int((target_h - image_h) / 2)
+            axes[0].imshow(image_pil)
+            axes[0].axis('off')  
+            axes[0].set_title('Original Image')
 
-            if (target_h - feature_h) % 2 != 0:
-                feature_margin_top = int((target_h - feature_h) / 2)
-                feature_margin_bot = int((target_h - feature_h) / 2) + 1
-            else:
-                feature_margin_top = int((target_h - feature_h) / 2)
-                feature_margin_bot = int((target_h - feature_h) / 2)
+            feature_image = axes[1].imshow(last_feature_block.cpu().numpy(), cmap='viridis', interpolation='nearest')
+            axes[1].axis('off')
+            axes[1].set_title('Feature Map')
 
-            img_left = cv2.vconcat([np.ones([img_margin_top, image_w, 3], dtype=np.uint8), 
-                                    raw_image, 
-                                    np.ones([img_margin_bot, image_w, 3], dtype=np.uint8)])
-            img_right = cv2.vconcat([np.ones([feature_margin_top, viz.shape[1], 3], dtype=np.uint8), 
-                                    viz, 
-                                    np.ones([feature_margin_bot, viz.shape[1], 3], dtype=np.uint8)])
-            viz = cv2.hconcat([img_left, img_right])
-            cv2.imwrite(feature_image_path, viz)
+            fig.colorbar(feature_image, ax=axes.ravel().tolist(), shrink=0.75)
+            plt.savefig(feature_image_path, bbox_inches='tight')

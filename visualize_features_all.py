@@ -48,18 +48,18 @@ if __name__ == '__main__':
     vits16 = torch.hub.load('facebookresearch/dino:main', 'dino_vits16').to(DEVICE).eval()
     vgg16 = torch.hub.load('pytorch/vision:v0.10.0', 'vgg16').to(DEVICE).eval()
     # depth_anything = DepthAnything.from_pretrained(str(model_path), local_files_only=True, cache_dir=str(model_path)).to(DEVICE).eval()
-    depth_anything = DepthAnything.from_pretrained(str(model_path)).eval()
+    depth_anything = DepthAnything.from_pretrained(str(model_path)).to(DEVICE).eval()
     
     total_params = sum(param.numel() for param in depth_anything.parameters())
     print('Total parameters: {:.2f}M'.format(total_params / 1e6))
     
     transform = Compose([
         Resize(
-            width=1036 * 3,
-            height=1036 * 3,
+            width=518*2,
+            height=518*2,
             resize_target=False,
             keep_aspect_ratio=True,
-            # ensure_multiple_of=14,
+            ensure_multiple_of=14,
             resize_method='lower_bound',
             image_interpolation_method=cv2.INTER_CUBIC,
         ),
@@ -78,13 +78,12 @@ if __name__ == '__main__':
         filenames = [os.path.join(args.img_path, filename) for filename in filenames if not filename.startswith('.')]
         filenames.sort()
     
-    os.makedirs(args.outdir, exist_ok=True)
-    
+    Path.mkdir(Path(args.outdir).resolve(), exist_ok=True)
     for filename in tqdm(filenames):
         print(filename)
         fp = Path(filename)
         image_fn = str(fp).split("/")[-1]
-        feature_image_path = str(Path(__file__).resolve().parent.joinpath("vis_depth_feature", image_fn))
+        feature_image_path = str(Path(args.outdir).resolve().joinpath(image_fn))
 
         raw_image = cv2.imread(filename)
         image_rgb = cv2.cvtColor(raw_image, cv2.COLOR_BGR2RGB)
@@ -100,7 +99,7 @@ if __name__ == '__main__':
         
         with torch.no_grad():
             # Depth Anything
-            depth, dpt_features = depth_anything(image)
+            dpt_features = depth_anything(image, feature_only=True)
             dpt_features = dpt_features[3][0] # 1x 2072 x 384
             dpt_features = torch.mean(dpt_features,dim=2).squeeze(0)
 
@@ -124,21 +123,21 @@ if __name__ == '__main__':
             fig, axes = plt.subplots(2, 2, figsize=(12, 5))
             print(axes.shape)
             
-            axes[0].imshow(image_pil)
-            axes[0].axis('off')  
-            axes[0].set_title('Original Image')
+            axes[0,0].imshow(image_pil)
+            axes[0,0].axis('off')  
+            axes[0,0].set_title('Original Image')
 
-            feature_image = axes[1].imshow(dpt_features.cpu().numpy(), cmap='viridis', interpolation='nearest')
-            axes[1].axis('off')
-            axes[1].set_title('Depth-Anything Feature Map')
+            feature_image = axes[0,1].imshow(dpt_features.cpu().numpy(), cmap='viridis', interpolation='nearest')
+            axes[0,1].axis('off')
+            axes[0,1].set_title('Depth-Anything Feature Map')
 
-            feature_image = axes[2].imshow(vgg_features.cpu().numpy(), cmap='viridis', interpolation='nearest')
-            axes[2].axis('off')
-            axes[2].set_title('VGG16 Feature Map')
+            feature_image = axes[1,0].imshow(vgg_features.cpu().numpy(), cmap='viridis', interpolation='nearest')
+            axes[1,0].axis('off')
+            axes[1,0].set_title('VGG16 Feature Map')
 
-            feature_image = axes[3].imshow(dino_features.cpu().numpy(), cmap='viridis', interpolation='nearest')
-            axes[3].axis('off')
-            axes[3].set_title('Dino Feature Map')
+            feature_image = axes[1,1].imshow(dino_features.cpu().numpy(), cmap='viridis', interpolation='nearest')
+            axes[1,1].axis('off')
+            axes[1,1].set_title('Dino Feature Map')
 
             fig.colorbar(feature_image, ax=axes.ravel().tolist(), shrink=0.75)
             plt.savefig(feature_image_path, bbox_inches='tight')

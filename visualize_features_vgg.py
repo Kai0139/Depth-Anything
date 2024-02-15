@@ -11,8 +11,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from depth_anything.util.transform import Resize, NormalizeImage, PrepareForNet
+from torchvision.models.vgg import VGG
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0, 1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '6'
 
 def normalize_255(arr : np.array):
     min_x = np.min(arr)
@@ -41,9 +42,10 @@ if __name__ == '__main__':
     
     DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    vits16 = torch.hub.load('facebookresearch/dino:main', 'dino_vits16').to(DEVICE).eval()
+    # vits16 = torch.hub.load('facebookresearch/dino:main', 'dino_vits16').to(DEVICE).eval()
+    vgg16 = torch.hub.load('pytorch/vision:v0.10.0', 'vgg16').to(DEVICE).eval()
     
-    total_params = sum(param.numel() for param in vits16.parameters())
+    total_params = sum(param.numel() for param in vgg16.parameters())
     print('Total parameters: {:.2f}M'.format(total_params / 1e6))
     
     transform = Compose([
@@ -52,7 +54,7 @@ if __name__ == '__main__':
             height=518*4,
             resize_target=False,
             keep_aspect_ratio=True,
-            ensure_multiple_of=16,
+            # ensure_multiple_of=16,
             resize_method='lower_bound',
             image_interpolation_method=cv2.INTER_CUBIC,
         ),
@@ -92,14 +94,11 @@ if __name__ == '__main__':
         print("input size: {}".format(image.shape))
         
         with torch.no_grad():
-            features = vits16.get_intermediate_layers(image, n=1)[0]
+            features = vgg16.features(image)
             print("features shape: {}".format(features.shape))
-            last_feature_block = torch.mean(features, dim=2).squeeze(0)
-            
-            seq_h = int(image.shape[2] / 16)
-            seq_w = int(image.shape[3] / 16)
-
-            last_feature_block = last_feature_block[:-1].reshape(seq_h,seq_w)
+            last_feature_block = features.squeeze(0).permute(1,2,0)
+            last_feature_block = torch.mean(last_feature_block, dim=2)
+            print("last_feature_block shape: {}".format(last_feature_block.shape))
 
             fig, axes = plt.subplots(1, 2, figsize=(12, 5))
             

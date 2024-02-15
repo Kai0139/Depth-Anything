@@ -52,11 +52,11 @@ if __name__ == '__main__':
     
     transform = Compose([
         Resize(
-            width=1036 * 3,
-            height=1036 * 3,
+            width=518,
+            height=518,
             resize_target=False,
             keep_aspect_ratio=True,
-            # ensure_multiple_of=14,
+            ensure_multiple_of=14,
             resize_method='lower_bound',
             image_interpolation_method=cv2.INTER_CUBIC,
         ),

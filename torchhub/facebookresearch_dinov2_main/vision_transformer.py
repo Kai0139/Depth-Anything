@@ -320,10 +320,9 @@ class DinoVisionTransformer(nn.Module):
             outputs = self._get_intermediate_layers_chunked(x, n)
         else:
             outputs = self._get_intermediate_layers_not_chunked(x, n)
-            print("length of outputs: {}".format(len(outputs)))
-            # print("shape of outputs: {}".format(outputs[0].shape))
-            for i in range(len(outputs)):
-                print("shape of output {}: {}".format(i, outputs[i].shape))
+            # print("length of outputs: {}".format(len(outputs)))
+            # for i in range(len(outputs)):
+            #     print("shape of output {}: {}".format(i, outputs[i].shape))
         if norm:
             outputs = [self.norm(out) for out in outputs]
         class_tokens = [out[:, 0] for out in outputs]

@@ -1,2 +1,4 @@
 __pycache__
-.npy
+*.npy
+input_rand/
+visualize_features/results/

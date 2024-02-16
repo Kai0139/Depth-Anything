@@ -2,7 +2,7 @@
 
 script_dir=$(realpath $(dirname $0))
 
-IMG_DIR=/home/user/Depth-Anything/input
+IMG_DIR=$script_dir/input
 OUT_DIR=$script_dir/data
 
 DATA_DIR=${OUT_DIR}

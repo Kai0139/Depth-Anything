@@ -1,0 +1,13 @@
+Image size: 518 x 518 x 3
+
+Vits14
+After feature extraction: 113.8  Mb
+After depth estimation: 115.2  Mb
+
+Vitb14
+After feature extraction: 407.0  Mb
+After depth estimation: 408.0  Mb
+
+Vitl14
+After feature extraction: 1325.0 Mb
+After depth estimation: 1326.0 Mb

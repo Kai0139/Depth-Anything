@@ -7,6 +7,7 @@ from huggingface_hub import PyTorchModelHubMixin, hf_hub_download
 from depth_anything.blocks import FeatureFusionBlock, _make_scratch
 
 from pathlib import Path
+from gpu_mem_track import MemTracker
 
 def _make_fusion_block(features, use_bn, size = None):
     return FeatureFusionBlock(
@@ -153,21 +154,32 @@ class DPT_DINOv2(nn.Module):
         dim = self.pretrained.blocks[0].attn.qkv.in_features
         
         self.depth_head = DPTHead(1, dim, features, use_bn, out_channels=out_channels, use_clstoken=use_clstoken)
+        self.mem_tracker = MemTracker()
         
-    def forward(self, x, feature_only=False):
+    def forward(self, x, feature_only=False, return_mem_usage=False):
         h, w = x.shape[-2:]
-        
+        self.mem_tracker.track()
         features = self.pretrained.get_intermediate_layers(x, 4, return_class_token=True)
         if feature_only:
             return features
         
+        self.mem_tracker.track()
+
+        feat_mem_usage = torch.cuda.memory_allocated(0)
         patch_h, patch_w = h // 14, w // 14
 
         depth = self.depth_head(features, patch_h, patch_w)
+        self.mem_tracker.track()
         depth = F.interpolate(depth, size=(h, w), mode="bilinear", align_corners=True)
         depth = F.relu(depth)
+        depth_mem_usage = torch.cuda.memory_allocated(0)
 
-        return depth.squeeze(1)
+        self.mem_tracker.track()
+
+        if return_mem_usage:
+            return depth.squeeze(1), feat_mem_usage, depth_mem_usage
+        else:
+            return depth.squeeze(1)
 
 
 class DepthAnything(DPT_DINOv2, PyTorchModelHubMixin):

@@ -1,0 +1,52 @@
+GPU Memory Track | 03-Mar-24-13:14:04 | Total Tensor Used Memory:1282.2 Mb Total Allocated Memory:1283.7 Mb
+
++ | 1 * Size:(512, 1024, 1, 1)    | Memory: 2.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(256, 256, 4, 4)     | Memory: 4.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 17 * Size:(256, 256, 3, 3)     | Memory: 38.25 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1024, 3, 14, 14)    | Memory: 2.2968 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 24 * Size:(4096,)              | Memory: 0.375 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1, 1370, 1024)      | Memory: 5.3515 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(128,)               | Memory: 0.0004 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 24 * Size:(3072,)              | Memory: 0.2812 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(32,)                | Memory: 0.0001 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 198 * Size:(1024,)              | Memory: 0.7734 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(128, 256, 3, 3)     | Memory: 1.125 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 24 * Size:(1024, 4096)         | Memory: 384.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 2 * Size:(256, 1024, 3, 3)    | Memory: 18.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 2 * Size:(512,)               | Memory: 0.0039 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1, 32, 1, 1)        | Memory: 0.0001 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(32, 128, 3, 3)      | Memory: 0.1406 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1, 1024)            | Memory: 0.0039 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 24 * Size:(1024, 1024)         | Memory: 96.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 24 * Size:(4096, 1024)         | Memory: 384.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(512, 512, 2, 2)     | Memory: 4.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 2 * Size:(1024, 1024, 1, 1)   | Memory: 8.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1, 3, 518, 518)     | Memory: 3.0707 M | <class 'torch.Tensor'> | torch.float32
++ | 1 * Size:(256, 512, 3, 3)     | Memory: 4.5 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1, 1, 1024)         | Memory: 0.0039 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 22 * Size:(256,)               | Memory: 0.0214 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1,)                 | Memory: 3.8146 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 4 * Size:(256, 256, 1, 1)     | Memory: 1.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(1024, 1024, 3, 3)   | Memory: 36.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 24 * Size:(3072, 1024)         | Memory: 288.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 1 * Size:(256, 1024, 1, 1)    | Memory: 1.0 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
+
+At /home/user/Depth-Anything/depth_anything/dpt.py line 161: forward Total Tensor Used Memory:1282.2 Mb Total Allocated Memory:1283.7 Mb
+
++ | 5 * Size:(1, 1370, 1024)      | Memory: 26.757 M | <class 'torch.Tensor'> | torch.float32
++ | 5 * Size:(1, 1024)            | Memory: 0.0195 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
++ | 5 * Size:(1, 1024)            | Memory: 0.0195 M | <class 'torch.Tensor'> | torch.float32
++ | 4 * Size:(1, 1369, 1024)      | Memory: 21.390 M | <class 'torch.Tensor'> | torch.float32
++ | 5 * Size:(1, 1370, 1024)      | Memory: 26.757 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
+- | 1 * Size:(1, 1024)            | Memory: 0.0039 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
+- | 1 * Size:(1, 1370, 1024)      | Memory: 5.3515 M | <class 'torch.nn.parameter.Parameter'> | torch.float32
+
+At /home/user/Depth-Anything/depth_anything/dpt.py line 166: forward Total Tensor Used Memory:1325.0 Mb Total Allocated Memory:1313.2 Mb
+
++ | 1 * Size:(1, 1, 518, 518)     | Memory: 1.0235 M | <class 'torch.Tensor'> | torch.float32
+
+At /home/user/Depth-Anything/depth_anything/dpt.py line 172: forward Total Tensor Used Memory:1326.0 Mb Total Allocated Memory:1314.4 Mb
+
+
+At /home/user/Depth-Anything/depth_anything/dpt.py line 177: forward Total Tensor Used Memory:1326.0 Mb Total Allocated Memory:1314.4 Mb
+

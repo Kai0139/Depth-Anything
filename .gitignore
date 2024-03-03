@@ -2,3 +2,4 @@ __pycache__
 *.npy
 input_rand/
 visualize_features/results/
+models/
